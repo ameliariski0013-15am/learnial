@@ -9,15 +9,16 @@ export default function Notification() {
   const [testSent, setTestSent] = useState(0)
 
   useEffect(() => {
-    if ('Notification' in window) {
-      setNotifStatus(Notification.permission as 'unknown' | 'granted' | 'denied')
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const perm = (window as any).Notification.permission
+      setNotifStatus(perm as 'unknown' | 'granted' | 'denied')
     }
     const saved = localStorage.getItem('learnial_email')
     if (saved) setEmail(saved)
   }, [])
 
   async function reqNotif() {
-    const perm = await Notification.requestPermission()
+    const perm = await (Notification as any).requestPermission()
     setNotifStatus(perm as 'granted' | 'denied')
   }
 
@@ -40,10 +41,11 @@ export default function Notification() {
   function testNotif() {
     playAlarm()
     if (notifStatus === 'granted') {
-      new Notification('Learnial — Waktunya Kuliah!', {
+      const n = new (window as any).Notification('Learnial — Waktunya Kuliah!', {
         body: '09:30 · Sistem Keamanan · R.301'
       })
-      setTestSent(n => n + 1)
+      void n
+      setTestSent(prev => prev + 1)
     }
   }
 
