@@ -32,7 +32,7 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
       for (let i = 1; i <= Math.min(pdf.numPages, 15); i++) {
         const page = await pdf.getPage(i)
         const tc = await page.getTextContent()
-        extracted += tc.items.map((x: { str: string }) => x.str).join(' ') + '\n'
+        extracted += tc.items.map((x: any) => x.str ?? '').join(' ') + '\n'
       }
       setText(extracted.trim())
       onTextExtracted(extracted.trim())
