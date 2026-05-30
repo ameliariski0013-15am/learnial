@@ -22,21 +22,21 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login')
-    if (session?.user?.email !== ADMIN_EMAIL) router.push('/')
-  }, [session, status])
+    if (status === 'loading') return
+    if (status === 'unauthenticated') { router.push('/login'); return }
+    if (session?.user?.email !== ADMIN_EMAIL) { router.push('/'); return }
 
-  useEffect(() => {
     fetch('/api/admin/users')
       .then(r => r.json())
       .then(data => { setUsers(data || []); setLoading(false) })
-  }, [])
+  }, [session, status])
+
+  if (status === 'loading') return <div className="p-8">Loading...</div>
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
-
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-gray-100">
             <p className="text-sm text-gray-400">Total User</p>
@@ -55,7 +55,6 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
-
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -73,7 +72,7 @@ export default function AdminPage() {
               ) : users.map(user => (
                 <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="p-4 flex items-center gap-3">
-                    {user.image && <img src={user.image} className="w-8 h-8 rounded-full" />}
+                    {user.image && <img src={user.image} className="w-8 h-8 rounded-full" alt="" />}
                     <span className="font-medium text-gray-700">{user.name}</span>
                   </td>
                   <td className="p-4 text-gray-500">{user.email}</td>
