@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 const ADMIN_EMAIL = 'ameliariski0013@mhs.unisbank.ac.id'
 
 interface User {
