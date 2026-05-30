@@ -8,10 +8,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
+    "@auth/supabase-adapter": "^1.11.2",
+    "@supabase/supabase-js": "^2.106.2",
     "groq-sdk": "^1.2.0",
     "lucide-react": "^0.400.0",
     "mammoth": "^1.8.0",
     "next": "^15.0.0",
+    "next-auth": "^4.24.14",
     "pdfjs-dist": "^5.7.284",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
