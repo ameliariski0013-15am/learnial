@@ -39,11 +39,33 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
     } else if (ext === 'docx' || ext === 'doc') {
       const mammoth = await import('mammoth')
       const ab = await file.arrayBuffer()
-      const result = await mammoth.extractRawText({ arrayBuffer: ab })
-      setText(result.value)
-      onTextExtracted(result.value)
+      const res = await mammoth.extractRawText({ arrayBuffer: ab })
+      setText(res.value)
+      onTextExtracted(res.value)
     } else if (ext === 'pptx' || ext === 'ppt') {
-      setText(`[File ${file.name} diupload]\n\nCatatan: Untuk file PPTX, silakan buka file di PowerPoint lalu copy semua teks dan paste di kolom teks di bawah ini.`)
+      try {
+        const PizZip = (await import('pizzip')).default
+        const ab = await file.arrayBuffer()
+        const zip = new PizZip(ab)
+        let extracted = ''
+        const slideFiles = Object.keys(zip.files).filter(f =>
+          /ppt\/slides\/slide[0-9]+\.xml/.test(f)
+        )
+        for (const sf of slideFiles) {
+          const xml = zip.files[sf].asText()
+          const matches = xml.match(/<a:t[^>]*>([^<]+)<\/a:t>/g) || []
+          extracted += matches.map(m => m.replace(/<[^>]+>/g, '')).join(' ') + '\n'
+        }
+        const trimmed = extracted.trim()
+        if (!trimmed) {
+          alert('Tidak ada teks yang bisa diekstrak dari file ini.')
+          return
+        }
+        setText(trimmed)
+        onTextExtracted(trimmed)
+      } catch (err) {
+        alert('Gagal membaca file PPTX. Coba copy-paste teks secara manual.')
+      }
     }
   }
 
@@ -57,11 +79,15 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
       })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Server error')
+      }
       const data = await res.json()
       setResult(data)
       onTextExtracted(text)
-    } catch {
-      alert('Gagal menganalisis. Coba lagi.')
+    } catch (e: any) {
+      alert('Gagal menganalisis: ' + (e.message || 'Coba lagi.'))
     }
     setLoading(false)
   }
@@ -86,17 +112,32 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
-        <h2 className="text-[13px] font-semibold text-gray-700 mb-1 flex items-center gap-2"><Upload size={14} className="text-brand-600" /> Upload File</h2>
+        <h2 className="text-[13px] font-semibold text-gray-700 mb-1 flex items-center gap-2">
+          <Upload size={14} className="text-brand-600" /> Upload File
+        </h2>
         <p className="text-[11px] text-gray-400 mb-3">Mendukung PDF, Word (.docx), PowerPoint (.pptx)</p>
 
         <div
-          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${fileName ? 'border-green-400 bg-green-50' : 'border-brand-200 bg-brand-50 hover:border-brand-400 hover:bg-brand-50'}`}
+          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+            fileName
+              ? 'border-green-400 bg-green-50'
+              : 'border-brand-200 bg-brand-50 hover:border-brand-400 hover:bg-brand-50'
+          }`}
           onClick={() => fileRef.current?.click()}
         >
-          {fileName
-            ? <><FileCheck size={28} className="text-green-500 mx-auto mb-2" /><p className="text-[13px] font-medium text-green-700">{fileName}</p><p className="text-[11px] text-green-500">File siap dianalisis</p></>
-            : <><Upload size={28} className="text-brand-400 mx-auto mb-2" /><p className="text-[13px] font-medium text-gray-700">Klik untuk upload file</p><p className="text-[11px] text-gray-400">PDF · DOCX · PPTX — maks. 10MB</p></>
-          }
+          {fileName ? (
+            <>
+              <FileCheck size={28} className="text-green-500 mx-auto mb-2" />
+              <p className="text-[13px] font-medium text-green-700">{fileName}</p>
+              <p className="text-[11px] text-green-500">File siap dianalisis</p>
+            </>
+          ) : (
+            <>
+              <Upload size={28} className="text-brand-400 mx-auto mb-2" />
+              <p className="text-[13px] font-medium text-gray-700">Klik untuk upload file</p>
+              <p className="text-[11px] text-gray-400">PDF · DOCX · PPTX — maks. 10MB</p>
+            </>
+          )}
         </div>
         <input ref={fileRef} type="file" accept=".pdf,.pptx,.ppt,.docx,.doc" className="hidden" onChange={handleFile} />
 
@@ -118,10 +159,11 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
           disabled={loading || !text.trim()}
           className="mt-3 flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading
-            ? <><span className="dot-1">●</span><span className="dot-2">●</span><span className="dot-3">●</span> Menganalisis...</>
-            : <><Sparkles size={14} /> Analisis Sekarang</>
-          }
+          {loading ? (
+            <><span className="dot-1">●</span><span className="dot-2">●</span><span className="dot-3">●</span> Menganalisis...</>
+          ) : (
+            <><Sparkles size={14} /> Analisis Sekarang</>
+          )}
         </button>
       </div>
 
@@ -132,7 +174,11 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-[12px] border-b-2 -mb-px transition-all ${activeTab === tab.id ? 'border-brand-600 text-brand-600 font-medium' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-[12px] border-b-2 -mb-px transition-all ${
+                  activeTab === tab.id
+                    ? 'border-brand-600 text-brand-600 font-medium'
+                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
               >
                 {tab.icon} {tab.label}
               </button>
@@ -146,7 +192,9 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
             <ul className="space-y-3">
               {result.ide_pokok.map((p, i) => (
                 <li key={i} className="flex gap-3 text-[13px] text-gray-700">
-                  <span className="w-5 h-5 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5">{i+1}</span>
+                  <span className="w-5 h-5 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
                   {p}
                 </li>
               ))}
@@ -155,16 +203,22 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
           {activeTab === 'kata' && (
             <div className="flex flex-wrap gap-2">
               {result.kata_kunci.map((k, i) => (
-                <span key={i} className="bg-brand-50 text-brand-800 text-[12px] font-medium px-3 py-1.5 rounded-full">{k}</span>
+                <span key={i} className="bg-brand-50 text-brand-800 text-[12px] font-medium px-3 py-1.5 rounded-full">
+                  {k}
+                </span>
               ))}
             </div>
           )}
           {activeTab === 'mindmap' && (
             <div className="text-center">
-              <div className="inline-block bg-brand-600 text-white text-[13px] font-semibold px-5 py-2 rounded-full mb-5">{result.mindmap.topik}</div>
+              <div className="inline-block bg-brand-600 text-white text-[13px] font-semibold px-5 py-2 rounded-full mb-5">
+                {result.mindmap.topik}
+              </div>
               <div className="flex flex-wrap gap-2 justify-center">
                 {result.mindmap.cabang.map((c, i) => (
-                  <div key={i} className="bg-brand-50 text-brand-800 text-[12px] px-4 py-2 rounded-lg border-l-2 border-brand-400">{c}</div>
+                  <div key={i} className="bg-brand-50 text-brand-800 text-[12px] px-4 py-2 rounded-lg border-l-2 border-brand-400">
+                    {c}
+                  </div>
                 ))}
               </div>
             </div>
