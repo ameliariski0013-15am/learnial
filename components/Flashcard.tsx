@@ -1,18 +1,21 @@
 'use client'
-import { useState } from 'react'
-import { CreditCard, Sparkles, ChevronLeft, ChevronRight, Copy, RotateCcw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CreditCard, Sparkles, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 
 interface FC { front: string; back: string }
 
 export default function Flashcard({ sharedText }: { sharedText: string }) {
-  const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [cards, setCards] = useState<FC[]>([])
   const [idx, setIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
 
+  useEffect(() => {
+    if (sharedText) doFlashcard()
+  }, [])
+
   async function doFlashcard() {
-    if (!text.trim()) return
+    if (!sharedText.trim()) return
     setLoading(true)
     setCards([])
     setIdx(0)
@@ -21,7 +24,7 @@ export default function Flashcard({ sharedText }: { sharedText: string }) {
       const res = await fetch('/api/flashcard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: sharedText })
       })
       setCards(await res.json())
     } catch {
@@ -40,36 +43,35 @@ export default function Flashcard({ sharedText }: { sharedText: string }) {
           <CreditCard size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-[15px] font-semibold text-brand-800">Flashcard Generator</h1>
-          <p className="text-[12px] text-brand-400">Kartu belajar interaktif — klik untuk flip</p>
+          <h1 className="text-[15px] font-semibold text-brand-800">Flashcard</h1>
+          <p className="text-[12px] text-brand-400">Kartu belajar dari materi yang kamu upload</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Paste materi kuliah di sini..."
-          className="w-full min-h-[90px] p-3 border border-gray-100 rounded-xl text-[13px] bg-gray-50 resize-y focus:outline-none focus:border-brand-400 text-gray-700"
-        />
-        <div className="flex gap-2 mt-3">
-          <button onClick={doFlashcard} disabled={loading || !text.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-800 disabled:opacity-50 transition-colors">
-            {loading ? <><span className="dot-1">●</span><span className="dot-2">●</span><span className="dot-3">●</span> Generating...</> : <><Sparkles size={14} /> Generate Flashcard</>}
-          </button>
-          {sharedText && (
-            <button onClick={() => setText(sharedText)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">
-              <Copy size={13} /> Pakai teks materi
-            </button>
-          )}
+      {loading && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="flex justify-center gap-1 mb-3">
+            <span className="dot-1 text-brand-600">●</span>
+            <span className="dot-2 text-brand-600">●</span>
+            <span className="dot-3 text-brand-600">●</span>
+          </div>
+          <p className="text-[13px] text-gray-500">Sedang membuat flashcard...</p>
         </div>
-      </div>
+      )}
+
+      {!loading && cards.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <p className="text-[13px] text-gray-500 mb-3">Kembali ke Analisis Materi dan upload file terlebih dahulu.</p>
+          <button onClick={doFlashcard} disabled={!sharedText}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-800 disabled:opacity-50 transition-colors mx-auto">
+            <Sparkles size={14} /> Coba Lagi
+          </button>
+        </div>
+      )}
 
       {cards.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 fade-in">
           <p className="text-[11px] text-gray-400 text-center mb-3">Klik kartu untuk melihat jawaban</p>
-
           <div className="flashcard-container h-[180px] mb-4 cursor-pointer" onClick={() => setFlipped(!flipped)}>
             <div className={`flashcard-inner h-full relative ${flipped ? 'flipped' : ''}`}>
               <div className="flashcard-face absolute inset-0 bg-brand-50 rounded-2xl border border-brand-100 flex flex-col items-center justify-center p-6 text-center">
@@ -82,7 +84,6 @@ export default function Flashcard({ sharedText }: { sharedText: string }) {
               </div>
             </div>
           </div>
-
           <div className="flex items-center justify-between">
             <button onClick={prev} disabled={idx === 0}
               className="flex items-center gap-1 px-3 py-2 border border-gray-100 rounded-lg text-[13px] text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
@@ -99,7 +100,6 @@ export default function Flashcard({ sharedText }: { sharedText: string }) {
               Selanjutnya <ChevronRight size={14} />
             </button>
           </div>
-
           <div className="flex gap-1 justify-center mt-4">
             {cards.map((_, i) => (
               <button key={i} onClick={() => { setIdx(i); setFlipped(false) }}

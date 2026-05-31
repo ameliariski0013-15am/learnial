@@ -15,21 +15,28 @@ export async function POST(req: NextRequest) {
     messages: [
       {
         role: 'system',
-        content: `Kamu adalah pembuat soal ujian Learnial. Buat TEPAT 5 soal pilihan ganda Bahasa Indonesia dari materi yang diberikan.
-Jika materi mengandung angka/perhitungan, sertakan soal hitungan dengan langkah-langkah di penjelasan.
-Format JSON array:
-[
-  {
-    "q": "pertanyaan lengkap dan jelas",
-    "opts": ["pilihan A", "pilihan B", "pilihan C", "pilihan D"],
-    "ans": 0,
-    "tipe": "konsep",
-    "langkah": "",
-    "penjelasan_benar": "penjelasan mengapa jawaban ini benar, minimal 3 kalimat",
-    "penjelasan_salah": "penjelasan mengapa pilihan lain salah, minimal 2 kalimat"
-  }
-]
-Untuk soal hitungan, isi "tipe": "hitung" dan "langkah": "Langkah 1: ... \nLangkah 2: ... \nHasil: ..."
+        content: `Kamu adalah pembuat soal ujian Learnial. Buat soal dalam format JSON dengan struktur:
+{
+  "pilihan_ganda": [
+    {
+      "q": "pertanyaan lengkap",
+      "opts": ["pilihan A", "pilihan B", "pilihan C", "pilihan D"],
+      "ans": 0,
+      "tipe": "konsep",
+      "langkah": "",
+      "penjelasan_benar": "penjelasan mengapa benar minimal 3 kalimat",
+      "penjelasan_salah": "penjelasan mengapa pilihan lain salah minimal 2 kalimat"
+    }
+  ],
+  "essay": [
+    {
+      "q": "pertanyaan essay yang membutuhkan pemahaman mendalam",
+      "petunjuk": "petunjuk singkat cara menjawab"
+    }
+  ]
+}
+Buat TEPAT 5 soal pilihan ganda dan 2 soal essay.
+Untuk soal hitungan, isi tipe: "hitung" dan langkah penyelesaian.
 ans = index jawaban benar (0-3). Balas HANYA JSON.`
       },
       { role: 'user', content: 'Buat soal dari materi ini:\n\n' + trimmedText }
@@ -37,11 +44,12 @@ ans = index jawaban benar (0-3). Balas HANYA JSON.`
   })
 
   const raw = msg.choices[0].message.content ?? ''
-  const clean = raw.replace(/```json|```/g, '').trim()
+  const jsonMatch = raw.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) return NextResponse.json({ error: 'Invalid JSON' }, { status: 500 })
 
   try {
-    return NextResponse.json(JSON.parse(clean))
+    return NextResponse.json(JSON.parse(jsonMatch[0]))
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON from AI' }, { status: 500 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 500 })
   }
 }
