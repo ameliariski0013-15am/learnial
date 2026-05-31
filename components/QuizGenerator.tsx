@@ -26,7 +26,7 @@ interface EssayResult {
   jawaban_ideal: string
 }
 
-export default function QuizGenerator({ sharedText }: { sharedText: string }) {
+export default function QuizGenerator({ sharedText, userId }: { sharedText: string; userId: string }) {
   const [loading, setLoading] = useState(false)
   const [quiz, setQuiz] = useState<QuizItem[]>([])
   const [essay, setEssay] = useState<EssayItem[]>([])
@@ -67,13 +67,31 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
     setLoading(false)
   }
 
-  function answer(qi: number, oi: number) {
+  async function answer(qi: number, oi: number) {
     if (answers[qi] !== undefined) return
     const newAnswers = { ...answers, [qi]: oi }
     setAnswers(newAnswers)
     const isBenar = oi === quiz[qi].ans
-    setTotalPoin(prev => prev + (isBenar ? 20 : 10))
-    if (Object.keys(newAnswers).length === quiz.length) setSelesai(true)
+    const newPoin = totalPoin + (isBenar ? 20 : 10)
+    setTotalPoin(newPoin)
+
+    if (Object.keys(newAnswers).length === quiz.length) {
+      setSelesai(true)
+      // Auto-save skor ke riwayat
+      if (userId) {
+        const benar = quiz.filter((q, i) => newAnswers[i] === q.ans).length
+        await fetch('/api/riwayat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            nama_file: 'Quiz',
+            skor_quiz: newPoin,
+            total_soal: quiz.length,
+          })
+        }).catch(() => {})
+      }
+    }
   }
 
   async function submitEssay(ei: number) {
@@ -102,7 +120,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
 
   return (
     <div className="max-w-3xl">
-      {/* Header */}
       <div className="bg-brand-50 border border-brand-100 rounded-2xl p-4 mb-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
@@ -122,7 +139,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
         )}
       </div>
 
-      {/* Loading */}
       {loading && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
           <div className="flex justify-center gap-1 mb-3">
@@ -134,15 +150,12 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
         </div>
       )}
 
-      {/* Skor akhir pilihan ganda */}
       {selesai && (
         <div className="bg-white rounded-2xl border border-brand-100 p-4 mb-4 fade-in">
           <div className="flex items-center gap-4">
             <Trophy size={28} className="text-yellow-500" />
             <div className="flex-1">
-              <p className="text-[15px] font-semibold text-gray-800">
-                Pilihan Ganda Selesai! 🎉
-              </p>
+              <p className="text-[15px] font-semibold text-gray-800">Pilihan Ganda Selesai! 🎉</p>
               <p className="text-[12px] text-gray-500">
                 Poin terkumpul: <span className="font-bold text-brand-600">{totalPoin}</span> dari {maxPoin} poin maksimal
               </p>
@@ -154,19 +167,13 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
               <span>{Math.round((totalPoin / maxPoin) * 100)}%</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-brand-600 rounded-full transition-all"
-                style={{ width: `${Math.round((totalPoin / maxPoin) * 100)}%` }}
-              />
+              <div className="h-full bg-brand-600 rounded-full transition-all" style={{ width: `${Math.round((totalPoin / maxPoin) * 100)}%` }} />
             </div>
           </div>
-          {essay.length > 0 && (
-            <p className="text-[12px] text-gray-500 mt-3">👇 Lanjutkan dengan soal essay di bawah!</p>
-          )}
+          {essay.length > 0 && <p className="text-[12px] text-gray-500 mt-3">👇 Lanjutkan dengan soal essay di bawah!</p>}
         </div>
       )}
 
-      {/* Soal Pilihan Ganda */}
       {quiz.map((q, qi) => (
         <div key={qi} className="bg-white rounded-2xl border border-gray-100 p-5 mb-3 fade-in">
           <div className="flex items-center justify-between mb-2">
@@ -184,7 +191,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
               </span>
             )}
           </div>
-
           <p className="text-[14px] font-medium text-gray-800 mb-4 leading-relaxed">{q.q}</p>
           <div className="space-y-2">
             {q.opts.map((opt, oi) => {
@@ -208,14 +214,11 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
               )
             })}
           </div>
-
           {answers[qi] !== undefined && (
             <div className="mt-3 space-y-2">
               {q.tipe === 'hitung' && q.langkah && (
                 <div className="bg-orange-50 border-l-2 border-orange-400 rounded-lg p-3">
-                  <p className="text-[11px] font-semibold text-orange-600 flex items-center gap-1 mb-2">
-                    <Calculator size={12} /> Langkah Penyelesaian
-                  </p>
+                  <p className="text-[11px] font-semibold text-orange-600 flex items-center gap-1 mb-2"><Calculator size={12} /> Langkah Penyelesaian</p>
                   <p className="text-[12px] text-orange-800 leading-relaxed whitespace-pre-line">{q.langkah}</p>
                 </div>
               )}
@@ -226,9 +229,7 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
                 </div>
               )}
               <div className="bg-green-50 border-l-2 border-green-400 rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-green-700 flex items-center gap-1 mb-1">
-                  <CheckCircle size={12} /> Jawaban Benar: {String.fromCharCode(65 + q.ans)}
-                </p>
+                <p className="text-[11px] font-semibold text-green-700 flex items-center gap-1 mb-1"><CheckCircle size={12} /> Jawaban Benar: {String.fromCharCode(65 + q.ans)}</p>
                 <p className="text-[12px] text-green-800 leading-relaxed">{q.penjelasan_benar}</p>
               </div>
             </div>
@@ -236,7 +237,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
         </div>
       ))}
 
-      {/* Soal Essay */}
       {essay.length > 0 && (
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-3">
@@ -249,7 +249,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
               <p className="text-[11px] font-semibold text-purple-400 mb-2">Essay {ei + 1} dari {essay.length}</p>
               <p className="text-[14px] font-medium text-gray-800 mb-2 leading-relaxed">{eq.q}</p>
               <p className="text-[11px] text-gray-400 mb-3 italic">{eq.petunjuk}</p>
-
               {!essayResults[ei] ? (
                 <>
                   <textarea
@@ -257,17 +256,10 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
                     onChange={e => setEssayAnswers(prev => ({ ...prev, [ei]: e.target.value }))}
                     placeholder="Tulis jawabanmu di sini..."
                     className="w-full min-h-[120px] p-3 border border-gray-100 rounded-xl text-[13px] bg-gray-50 resize-y focus:outline-none focus:border-purple-400 text-gray-700"
-                    disabled={!!essayResults[ei]}
                   />
-                  <button
-                    onClick={() => submitEssay(ei)}
-                    disabled={!essayAnswers[ei]?.trim() || essayLoading[ei]}
-                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-[13px] font-medium hover:bg-purple-800 disabled:opacity-50 transition-colors"
-                  >
-                    {essayLoading[ei]
-                      ? <><Loader size={13} className="animate-spin" /> Menilai...</>
-                      : <><Send size={13} /> Submit Jawaban</>
-                    }
+                  <button onClick={() => submitEssay(ei)} disabled={!essayAnswers[ei]?.trim() || essayLoading[ei]}
+                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-[13px] font-medium hover:bg-purple-800 disabled:opacity-50 transition-colors">
+                    {essayLoading[ei] ? <><Loader size={13} className="animate-spin" /> Menilai...</> : <><Send size={13} /> Submit Jawaban</>}
                   </button>
                 </>
               ) : (
@@ -276,49 +268,25 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
                     <p className="text-[11px] text-gray-400 mb-1">Jawaban kamu:</p>
                     <p className="text-[13px] text-gray-700">{essayAnswers[ei]}</p>
                   </div>
-
-                  <div className={`rounded-xl p-4 ${
-                    essayResults[ei].skor >= 90 ? 'bg-green-50 border border-green-200' :
-                    essayResults[ei].skor >= 75 ? 'bg-blue-50 border border-blue-200' :
-                    essayResults[ei].skor >= 60 ? 'bg-yellow-50 border border-yellow-200' :
-                    'bg-red-50 border border-red-200'
-                  }`}>
+                  <div className={`rounded-xl p-4 ${essayResults[ei].skor >= 90 ? 'bg-green-50 border border-green-200' : essayResults[ei].skor >= 75 ? 'bg-blue-50 border border-blue-200' : essayResults[ei].skor >= 60 ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'}`}>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[13px] font-semibold text-gray-800">
-                        Skor: {essayResults[ei].skor}/100
-                      </p>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                        essayResults[ei].skor >= 90 ? 'bg-green-100 text-green-700' :
-                        essayResults[ei].skor >= 75 ? 'bg-blue-100 text-blue-700' :
-                        essayResults[ei].skor >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>{essayResults[ei].predikat}</span>
+                      <p className="text-[13px] font-semibold text-gray-800">Skor: {essayResults[ei].skor}/100</p>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${essayResults[ei].skor >= 90 ? 'bg-green-100 text-green-700' : essayResults[ei].skor >= 75 ? 'bg-blue-100 text-blue-700' : essayResults[ei].skor >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{essayResults[ei].predikat}</span>
                     </div>
                     <p className="text-[12px] text-gray-700 leading-relaxed">{essayResults[ei].feedback}</p>
                   </div>
-
                   {essayResults[ei].poin_benar?.length > 0 && (
                     <div className="bg-green-50 border-l-2 border-green-400 rounded-lg p-3">
                       <p className="text-[11px] font-semibold text-green-700 mb-2">✅ Poin yang benar:</p>
-                      <ul className="space-y-1">
-                        {essayResults[ei].poin_benar.map((p, i) => (
-                          <li key={i} className="text-[12px] text-green-800">• {p}</li>
-                        ))}
-                      </ul>
+                      <ul className="space-y-1">{essayResults[ei].poin_benar.map((p, i) => <li key={i} className="text-[12px] text-green-800">• {p}</li>)}</ul>
                     </div>
                   )}
-
                   {essayResults[ei].poin_kurang?.length > 0 && (
                     <div className="bg-orange-50 border-l-2 border-orange-400 rounded-lg p-3">
                       <p className="text-[11px] font-semibold text-orange-700 mb-2">📝 Perlu diperbaiki:</p>
-                      <ul className="space-y-1">
-                        {essayResults[ei].poin_kurang.map((p, i) => (
-                          <li key={i} className="text-[12px] text-orange-800">• {p}</li>
-                        ))}
-                      </ul>
+                      <ul className="space-y-1">{essayResults[ei].poin_kurang.map((p, i) => <li key={i} className="text-[12px] text-orange-800">• {p}</li>)}</ul>
                     </div>
                   )}
-
                   <div className="bg-blue-50 border-l-2 border-blue-400 rounded-lg p-3">
                     <p className="text-[11px] font-semibold text-blue-700 mb-1">💡 Jawaban Ideal:</p>
                     <p className="text-[12px] text-blue-800 leading-relaxed">{essayResults[ei].jawaban_ideal}</p>
@@ -330,7 +298,6 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
         </div>
       )}
 
-      {/* Ulangi Quiz */}
       {(selesai || quiz.length === 0) && !loading && (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 text-center">
           <button onClick={doQuiz}
