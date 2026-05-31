@@ -7,9 +7,11 @@ export async function POST(req: NextRequest) {
   const { text } = await req.json()
   if (!text) return NextResponse.json({ error: 'No text' }, { status: 400 })
 
+  const trimmedText = text.slice(0, 8000)
+
   const msg = await client.chat.completions.create({
-    model: 'llama3-70b-8192',
-    max_tokens: 1500,
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: 2000,
     messages: [
       {
         role: 'system',
@@ -25,11 +27,16 @@ export async function POST(req: NextRequest) {
 }
 Balas HANYA JSON tanpa teks lain.`
       },
-      { role: 'user', content: text }
+      { role: 'user', content: trimmedText }
     ],
   })
 
   const raw = msg.choices[0].message.content ?? ''
   const clean = raw.replace(/```json|```/g, '').trim()
-  return NextResponse.json(JSON.parse(clean))
+
+  try {
+    return NextResponse.json(JSON.parse(clean))
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON from AI' }, { status: 500 })
+  }
 }
