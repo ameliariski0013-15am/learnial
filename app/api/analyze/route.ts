@@ -11,14 +11,14 @@ export async function POST(req: NextRequest) {
 
   const msg = await client.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
-    max_tokens: 2000,
+    max_tokens: 3000,
     messages: [
       {
         role: 'system',
         content: `Kamu adalah asisten akademik Learnial. Analisis materi kuliah dan balas dalam format JSON:
 {
-  "ringkasan": "ringkasan materi 150 kata dalam Bahasa Indonesia",
-  "ide_pokok": ["poin 1", "poin 2", "poin 3", "poin 4", "poin 5"],
+  "ringkasan": "ringkasan materi yang detail dan komprehensif minimal 300 kata dalam Bahasa Indonesia, jelaskan konsep-konsep penting secara mendalam",
+  "ide_pokok": ["ide pokok 1 yang dijelaskan lengkap", "ide pokok 2", "ide pokok 3", "ide pokok 4", "ide pokok 5"],
   "kata_kunci": ["kata1", "kata2", "kata3", "kata4", "kata5", "kata6", "kata7", "kata8"],
   "mindmap": {
     "topik": "judul topik utama",

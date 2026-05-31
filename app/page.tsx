@@ -14,11 +14,15 @@ export default function Home() {
   const [page, setPage] = useState<Page>('study')
   const [sharedText, setSharedText] = useState('')
 
+  function goToQuiz() {
+    setPage('quiz')
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar activePage={page} onNavigate={setPage} />
       <main className="flex-1 overflow-y-auto p-6 bg-[#F6F5FF]">
-        {page === 'study'     && <StudyAnalysis onTextExtracted={setSharedText} />}
+        {page === 'study'     && <StudyAnalysis onTextExtracted={setSharedText} onGoToQuiz={goToQuiz} />}
         {page === 'quiz'      && <QuizGenerator sharedText={sharedText} />}
         {page === 'flashcard' && <Flashcard sharedText={sharedText} />}
         {page === 'video'     && <VideoNarasi sharedText={sharedText} />}

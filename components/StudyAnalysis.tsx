@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { Upload, Sparkles, FileCheck, BookOpen, Lightbulb, Tag, Network } from 'lucide-react'
+import { Upload, Sparkles, FileCheck, BookOpen, Lightbulb, Tag, Network, ArrowRight } from 'lucide-react'
 
 interface AnalysisResult {
   ringkasan: string
@@ -9,7 +9,10 @@ interface AnalysisResult {
   mindmap: { topik: string; cabang: string[] }
 }
 
-export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t: string) => void }) {
+export default function StudyAnalysis({ onTextExtracted, onGoToQuiz }: { 
+  onTextExtracted: (t: string) => void
+  onGoToQuiz: () => void
+}) {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -63,7 +66,7 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
         }
         setText(trimmed)
         onTextExtracted(trimmed)
-      } catch (err) {
+      } catch {
         alert('Gagal membaca file PPTX. Coba copy-paste teks secara manual.')
       }
     }
@@ -79,10 +82,7 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Server error')
-      }
+      if (!res.ok) throw new Error('Server error')
       const data = await res.json()
       setResult(data)
       onTextExtracted(text)
@@ -119,9 +119,7 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
 
         <div
           className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-            fileName
-              ? 'border-green-400 bg-green-50'
-              : 'border-brand-200 bg-brand-50 hover:border-brand-400 hover:bg-brand-50'
+            fileName ? 'border-green-400 bg-green-50' : 'border-brand-200 bg-brand-50 hover:border-brand-400'
           }`}
           onClick={() => fileRef.current?.click()}
         >
@@ -186,15 +184,13 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
           </div>
 
           {activeTab === 'ringkasan' && (
-            <p className="text-[13px] text-gray-700 leading-relaxed">{result.ringkasan}</p>
+            <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line">{result.ringkasan}</p>
           )}
           {activeTab === 'ide' && (
             <ul className="space-y-3">
               {result.ide_pokok.map((p, i) => (
                 <li key={i} className="flex gap-3 text-[13px] text-gray-700">
-                  <span className="w-5 h-5 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
+                  <span className="w-5 h-5 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5">{i + 1}</span>
                   {p}
                 </li>
               ))}
@@ -203,26 +199,31 @@ export default function StudyAnalysis({ onTextExtracted }: { onTextExtracted: (t
           {activeTab === 'kata' && (
             <div className="flex flex-wrap gap-2">
               {result.kata_kunci.map((k, i) => (
-                <span key={i} className="bg-brand-50 text-brand-800 text-[12px] font-medium px-3 py-1.5 rounded-full">
-                  {k}
-                </span>
+                <span key={i} className="bg-brand-50 text-brand-800 text-[12px] font-medium px-3 py-1.5 rounded-full">{k}</span>
               ))}
             </div>
           )}
           {activeTab === 'mindmap' && (
             <div className="text-center">
-              <div className="inline-block bg-brand-600 text-white text-[13px] font-semibold px-5 py-2 rounded-full mb-5">
-                {result.mindmap.topik}
-              </div>
+              <div className="inline-block bg-brand-600 text-white text-[13px] font-semibold px-5 py-2 rounded-full mb-5">{result.mindmap.topik}</div>
               <div className="flex flex-wrap gap-2 justify-center">
                 {result.mindmap.cabang.map((c, i) => (
-                  <div key={i} className="bg-brand-50 text-brand-800 text-[12px] px-4 py-2 rounded-lg border-l-2 border-brand-400">
-                    {c}
-                  </div>
+                  <div key={i} className="bg-brand-50 text-brand-800 text-[12px] px-4 py-2 rounded-lg border-l-2 border-brand-400">{c}</div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Tombol lanjut ke quiz */}
+          <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <p className="text-[12px] text-gray-400">Sudah paham materinya?</p>
+            <button
+              onClick={onGoToQuiz}
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-800 transition-colors"
+            >
+              Uji Pemahaman <ArrowRight size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>

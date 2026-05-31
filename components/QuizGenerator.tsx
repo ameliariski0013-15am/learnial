@@ -1,24 +1,29 @@
 'use client'
-import { useState } from 'react'
-import { HelpCircle, Sparkles, CheckCircle, XCircle, Trophy, Copy } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { HelpCircle, Sparkles, CheckCircle, XCircle, Trophy, Calculator } from 'lucide-react'
 
 interface QuizItem {
   q: string
   opts: string[]
   ans: number
+  tipe: string
+  langkah: string
   penjelasan_benar: string
   penjelasan_salah: string
 }
 
 export default function QuizGenerator({ sharedText }: { sharedText: string }) {
-  const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [quiz, setQuiz] = useState<QuizItem[]>([])
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [score, setScore] = useState<number | null>(null)
 
+  useEffect(() => {
+    if (sharedText) doQuiz()
+  }, [])
+
   async function doQuiz() {
-    if (!text.trim()) return
+    if (!sharedText.trim()) return
     setLoading(true)
     setQuiz([])
     setAnswers({})
@@ -27,8 +32,9 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
       const res = await fetch('/api/quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text: sharedText })
       })
+      if (!res.ok) throw new Error('Server error')
       const data = await res.json()
       setQuiz(data)
     } catch {
@@ -55,40 +61,33 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
         </div>
         <div>
           <h1 className="text-[15px] font-semibold text-brand-800">Quiz Interaktif</h1>
-          <p className="text-[12px] text-brand-400">Soal pilihan ganda + penjelasan mengapa benar/salah</p>
+          <p className="text-[12px] text-brand-400">Soal dari materi yang kamu upload</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
-        <h2 className="text-[13px] font-semibold text-gray-700 mb-1">Input Materi</h2>
-        <p className="text-[11px] text-gray-400 mb-3">Paste materi atau gunakan teks dari Analisis Materi</p>
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Paste materi kuliah di sini..."
-          className="w-full min-h-[90px] p-3 border border-gray-100 rounded-xl text-[13px] bg-gray-50 resize-y focus:outline-none focus:border-brand-400 text-gray-700"
-        />
-        <div className="flex gap-2 mt-3">
+      {loading && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="flex justify-center gap-1 mb-3">
+            <span className="dot-1 text-brand-600">●</span>
+            <span className="dot-2 text-brand-600">●</span>
+            <span className="dot-3 text-brand-600">●</span>
+          </div>
+          <p className="text-[13px] text-gray-500">Sedang membuat soal dari materimu...</p>
+        </div>
+      )}
+
+      {!loading && quiz.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <p className="text-[13px] text-gray-500 mb-3">Tidak ada soal. Kembali ke Analisis Materi dan upload file terlebih dahulu.</p>
           <button
             onClick={doQuiz}
-            disabled={loading || !text.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-800 disabled:opacity-50 transition-colors"
+            disabled={!sharedText}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-800 disabled:opacity-50 transition-colors mx-auto"
           >
-            {loading
-              ? <><span className="dot-1">●</span><span className="dot-2">●</span><span className="dot-3">●</span> Generating...</>
-              : <><Sparkles size={14} /> Generate Quiz</>
-            }
+            <Sparkles size={14} /> Coba Lagi
           </button>
-          {sharedText && (
-            <button
-              onClick={() => setText(sharedText)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-[13px] text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <Copy size={13} /> Pakai teks materi
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {score !== null && (
         <div className="bg-white rounded-2xl border border-brand-100 p-4 mb-4 flex items-center gap-4 fade-in">
@@ -98,7 +97,7 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
               Skor: {score} / {quiz.length} ({Math.round((score / quiz.length) * 100)}%)
             </p>
             <p className="text-[12px] text-gray-500">
-              {score === quiz.length ? 'Sempurna! Luar biasa Amelia! 🎉' : score >= quiz.length * 0.8 ? 'Bagus sekali! Terus semangat!' : score >= quiz.length * 0.6 ? 'Lumayan, pelajari lagi ya!' : 'Yuk pelajari lagi materinya!'}
+              {score === quiz.length ? 'Sempurna! 🎉' : score >= quiz.length * 0.8 ? 'Bagus sekali!' : score >= quiz.length * 0.6 ? 'Lumayan, pelajari lagi ya!' : 'Yuk pelajari lagi materinya!'}
             </p>
           </div>
         </div>
@@ -106,7 +105,14 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
 
       {quiz.map((q, qi) => (
         <div key={qi} className="bg-white rounded-2xl border border-gray-100 p-5 mb-3 fade-in">
-          <p className="text-[11px] font-semibold text-brand-400 mb-2">Soal {qi + 1} dari {quiz.length}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-[11px] font-semibold text-brand-400">Soal {qi + 1} dari {quiz.length}</p>
+            {q.tipe === 'hitung' && (
+              <span className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-medium">
+                <Calculator size={10} /> Hitungan
+              </span>
+            )}
+          </div>
           <p className="text-[14px] font-medium text-gray-800 mb-4 leading-relaxed">{q.q}</p>
           <div className="space-y-2">
             {q.opts.map((opt, oi) => {
@@ -139,6 +145,14 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
 
           {answers[qi] !== undefined && (
             <div className="mt-3 space-y-2">
+              {q.tipe === 'hitung' && q.langkah && (
+                <div className="bg-orange-50 border-l-2 border-orange-400 rounded-lg p-3">
+                  <p className="text-[11px] font-semibold text-orange-600 flex items-center gap-1 mb-2">
+                    <Calculator size={12} /> Langkah Penyelesaian
+                  </p>
+                  <p className="text-[12px] text-orange-800 leading-relaxed whitespace-pre-line">{q.langkah}</p>
+                </div>
+              )}
               {answers[qi] !== q.ans && (
                 <div className="bg-red-50 border-l-2 border-red-400 rounded-lg p-3">
                   <p className="text-[11px] font-semibold text-red-600 flex items-center gap-1 mb-1"><XCircle size={12} /> Kurang Tepat</p>
@@ -146,13 +160,26 @@ export default function QuizGenerator({ sharedText }: { sharedText: string }) {
                 </div>
               )}
               <div className="bg-green-50 border-l-2 border-green-400 rounded-lg p-3">
-                <p className="text-[11px] font-semibold text-green-700 flex items-center gap-1 mb-1"><CheckCircle size={12} /> Jawaban Benar: {String.fromCharCode(65 + q.ans)}</p>
+                <p className="text-[11px] font-semibold text-green-700 flex items-center gap-1 mb-1">
+                  <CheckCircle size={12} /> Jawaban Benar: {String.fromCharCode(65 + q.ans)}
+                </p>
                 <p className="text-[12px] text-green-800 leading-relaxed">{q.penjelasan_benar}</p>
               </div>
             </div>
           )}
         </div>
       ))}
+
+      {score !== null && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 text-center">
+          <button
+            onClick={doQuiz}
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-800 transition-colors mx-auto"
+          >
+            <Sparkles size={14} /> Ulangi Quiz
+          </button>
+        </div>
+      )}
     </div>
   )
 }
