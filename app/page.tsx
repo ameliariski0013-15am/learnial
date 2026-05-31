@@ -10,6 +10,8 @@ import Notification from '@/components/Notification'
 import Riwayat from '@/components/Riwayat'
 import { useSession } from 'next-auth/react'
 
+export const dynamic = 'force-dynamic'
+
 export type Page = 'study' | 'quiz' | 'flashcard' | 'video' | 'riwayat' | 'schedule' | 'notif'
 
 export default function Home() {
