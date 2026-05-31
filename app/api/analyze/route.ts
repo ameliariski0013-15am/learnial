@@ -7,7 +7,13 @@ export async function POST(req: NextRequest) {
   const { text } = await req.json()
   if (!text) return NextResponse.json({ error: 'No text' }, { status: 400 })
 
-  const trimmedText = text.slice(0, 8000)
+  // Bersihkan karakter HTML entities dan potong teks
+  const cleanText = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .slice(0, 8000)
 
   const msg = await client.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
@@ -25,17 +31,23 @@ export async function POST(req: NextRequest) {
     "cabang": ["cabang1", "cabang2", "cabang3", "cabang4", "cabang5"]
   }
 }
-Balas HANYA JSON tanpa teks lain.`
+Balas HANYA JSON tanpa teks lain. Jangan gunakan karakter khusus dalam JSON.`
       },
-      { role: 'user', content: trimmedText }
+      { role: 'user', content: cleanText }
     ],
   })
 
   const raw = msg.choices[0].message.content ?? ''
-  const clean = raw.replace(/```json|```/g, '').trim()
+  
+  // Ekstrak JSON dari response
+  const jsonMatch = raw.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    return NextResponse.json({ error: 'Invalid JSON from AI' }, { status: 500 })
+  }
 
   try {
-    return NextResponse.json(JSON.parse(clean))
+    const parsed = JSON.parse(jsonMatch[0])
+    return NextResponse.json(parsed)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON from AI' }, { status: 500 })
   }
