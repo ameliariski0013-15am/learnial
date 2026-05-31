@@ -9,9 +9,10 @@ interface AnalysisResult {
   mindmap: { topik: string; cabang: string[] }
 }
 
-export default function StudyAnalysis({ onTextExtracted, onGoToQuiz }: { 
+export default function StudyAnalysis({ onTextExtracted, onGoToQuiz, userId }: { 
   onTextExtracted: (t: string) => void
   onGoToQuiz: () => void
+  userId: string
 }) {
   const [text, setText] = useState('')
   const [fileName, setFileName] = useState('')
@@ -86,6 +87,21 @@ export default function StudyAnalysis({ onTextExtracted, onGoToQuiz }: {
       const data = await res.json()
       setResult(data)
       onTextExtracted(text)
+
+      // Auto-save ke riwayat
+      if (userId && fileName) {
+        await fetch('/api/riwayat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            nama_file: fileName,
+            ringkasan: data.ringkasan,
+            ide_pokok: data.ide_pokok,
+            kata_kunci: data.kata_kunci,
+          })
+        }).catch(() => {}) // silent fail jika tidak login
+      }
     } catch (e: any) {
       alert('Gagal menganalisis: ' + (e.message || 'Coba lagi.'))
     }
@@ -214,7 +230,6 @@ export default function StudyAnalysis({ onTextExtracted, onGoToQuiz }: {
             </div>
           )}
 
-          {/* Tombol lanjut ke quiz */}
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
             <p className="text-[12px] text-gray-400">Sudah paham materinya?</p>
             <button

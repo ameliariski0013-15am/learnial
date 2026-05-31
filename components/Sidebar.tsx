@@ -1,17 +1,16 @@
 'use client'
-import { BookOpen, HelpCircle, CreditCard, Youtube, Calendar, Bell, GraduationCap, Heart } from 'lucide-react'
+import { BookOpen, HelpCircle, CreditCard, Youtube, Calendar, Bell, GraduationCap, Heart, History } from 'lucide-react'
 import type { Page } from '@/app/page'
 
-const navItems: { id: Page; label: string; icon: React.ReactNode; section?: string }[] = [
-  { id: 'study',     label: 'Analisis Materi', icon: <BookOpen size={16} />,    section: 'AI Study Buddy' },
+const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
+  { id: 'study',     label: 'Analisis Materi', icon: <BookOpen size={16} /> },
   { id: 'quiz',      label: 'Quiz Interaktif', icon: <HelpCircle size={16} /> },
   { id: 'flashcard', label: 'Flashcard',        icon: <CreditCard size={16} /> },
-  { id: 'video',     label: 'Video & Narasi',   icon: <Youtube size={16} />,    section: 'AI Schedule' },
-  { id: 'schedule',  label: 'Jadwal Kuliah',    icon: <Calendar size={16} />,   section: 'AI Schedule' },
+  { id: 'video',     label: 'Video & Narasi',   icon: <Youtube size={16} /> },
+  { id: 'riwayat',   label: 'Riwayat',          icon: <History size={16} /> },
+  { id: 'schedule',  label: 'Jadwal Kuliah',    icon: <Calendar size={16} /> },
   { id: 'notif',     label: 'Notifikasi',       icon: <Bell size={16} /> },
 ]
-
-const sections = ['AI Study Buddy', 'AI Schedule']
 
 export default function Sidebar({ activePage, onNavigate }: {
   activePage: Page
@@ -28,28 +27,36 @@ export default function Sidebar({ activePage, onNavigate }: {
       </div>
 
       <nav className="flex-1 px-3 space-y-0.5">
-        {['AI Study Buddy', 'AI Schedule'].map(section => (
-          <div key={section}>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 pt-4 pb-1.5">{section}</p>
-            {navItems.filter(item =>
-              section === 'AI Study Buddy'
-                ? ['study','quiz','flashcard','video'].includes(item.id)
-                : ['schedule','notif'].includes(item.id)
-            ).map(item => (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
-                  activePage === item.id
-                    ? 'bg-brand-50 text-brand-600 font-medium'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 pt-4 pb-1.5">AI Study Buddy</p>
+        {navItems.filter(i => ['study','quiz','flashcard','video','riwayat'].includes(i.id)).map(item => (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
+              activePage === item.id
+                ? 'bg-brand-50 text-brand-600 font-medium'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+            }`}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
+
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 pt-4 pb-1.5">AI Schedule</p>
+        {navItems.filter(i => ['schedule','notif'].includes(i.id)).map(item => (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
+              activePage === item.id
+                ? 'bg-brand-50 text-brand-600 font-medium'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+            }`}
+          >
+            {item.icon}
+            {item.label}
+          </button>
         ))}
       </nav>
 
