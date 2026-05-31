@@ -22,19 +22,25 @@ const DAY_COLORS: Record<string, string> = {
 
 export default function Schedule() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
+  const [mounted, setMounted] = useState(false)
   const [name, setName] = useState('')
   const [day, setDay] = useState('Senin')
   const [time, setTime] = useState('09:30')
   const [room, setRoom] = useState('')
 
   useEffect(() => {
-    const saved = localStorage.getItem('learnial_schedules')
-    if (saved) setSchedules(JSON.parse(saved))
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('learnial_schedules')
+      if (saved) setSchedules(JSON.parse(saved))
+    }
   }, [])
 
   function save(items: ScheduleItem[]) {
     setSchedules(items)
-    localStorage.setItem('learnial_schedules', JSON.stringify(items))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('learnial_schedules', JSON.stringify(items))
+    }
   }
 
   function add() {
@@ -55,6 +61,8 @@ export default function Schedule() {
 
   const today = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date().getDay()]
   const todayItems = grouped[today] || []
+
+  if (!mounted) return null
 
   return (
     <div className="max-w-3xl">
