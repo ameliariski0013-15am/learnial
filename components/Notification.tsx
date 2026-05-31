@@ -7,14 +7,20 @@ export default function Notification() {
   const [email, setEmail] = useState('')
   const [emailSaved, setEmailSaved] = useState(false)
   const [testSent, setTestSent] = useState(0)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      const perm = (window as any).Notification.permission
-      setNotifStatus(perm as 'unknown' | 'granted' | 'denied')
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      if ('Notification' in window) {
+        setNotifStatus((window as any).Notification.permission)
+      }
+      const savedEmail = localStorage.getItem('learnial_email')
+      if (savedEmail) setEmail(savedEmail)
+      const savedSchedules = localStorage.getItem('learnial_schedules')
+      if (savedSchedules) setSchedules(JSON.parse(savedSchedules))
     }
-    const saved = localStorage.getItem('learnial_email')
-    if (saved) setEmail(saved)
   }, [])
 
   async function reqNotif() {
@@ -55,7 +61,7 @@ export default function Notification() {
     setTimeout(() => setEmailSaved(false), 3000)
   }
 
-  const schedules = JSON.parse(localStorage.getItem('learnial_schedules') || '[]')
+  if (!mounted) return null
 
   return (
     <div className="max-w-3xl">
@@ -101,7 +107,7 @@ export default function Notification() {
 
       <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
         <h2 className="text-[13px] font-semibold text-gray-700 flex items-center gap-2 mb-1"><Mail size={14} className="text-brand-600" /> Email Reminder</h2>
-        <p className="text-[11px] text-gray-400 mb-4">Simpan email untuk reminder jadwal harian (integrasi EmailJS tersedia)</p>
+        <p className="text-[11px] text-gray-400 mb-4">Simpan email untuk reminder jadwal harian</p>
         <div className="flex gap-2">
           <input type="email" value={email} onChange={e => setEmail(e.target.value)}
             placeholder="emailkamu@gmail.com"
