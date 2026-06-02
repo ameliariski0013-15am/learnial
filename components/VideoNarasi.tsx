@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Youtube, Search, Volume2, VolumeX, ExternalLink } from 'lucide-react'
 
 interface VideoResult {
@@ -11,10 +11,14 @@ export default function VideoNarasi({ sharedText }: { sharedText: string }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<VideoResult | null>(null)
   const [speaking, setSpeaking] = useState(false)
+  const hasLoaded = useRef(false)
 
   useEffect(() => {
-    if (sharedText) doVideo()
-  }, [])
+    if (sharedText && !hasLoaded.current) {
+      hasLoaded.current = true
+      doVideo()
+    }
+  }, [sharedText])
 
   async function doVideo() {
     if (!sharedText.trim()) return

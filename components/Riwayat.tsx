@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { History, BookOpen, Trophy, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { History, BookOpen, Trophy, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface RiwayatItem {
   id: string
@@ -20,9 +20,11 @@ export default function Riwayat({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (userId) fetchRiwayat()
+    else setLoading(false)
   }, [userId])
 
   async function fetchRiwayat() {
+    if (!userId) { setLoading(false); return }
     setLoading(true)
     try {
       const res = await fetch(`/api/riwayat?user_id=${userId}`)
@@ -64,7 +66,14 @@ export default function Riwayat({ userId }: { userId: string }) {
         </div>
       )}
 
-      {!loading && items.length === 0 && (
+      {!loading && !userId && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <History size={32} className="text-gray-200 mx-auto mb-3" />
+          <p className="text-[13px] text-gray-500">Login terlebih dahulu untuk melihat riwayat belajar.</p>
+        </div>
+      )}
+
+      {!loading && userId && items.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
           <History size={32} className="text-gray-200 mx-auto mb-3" />
           <p className="text-[13px] text-gray-500">Belum ada riwayat belajar.</p>
